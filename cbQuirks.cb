@@ -86,10 +86,9 @@ EndFunction
 
 
 //
-// Makes a copy of a type instance and returns the copy. All field values are copied, but read details below if you happen to have string fields in your type!
+// Makes a copy of a type instance and returns the copy. All field values are copied.
 //
 // Notes about strange behaviour:
-// - If the cloned instance has any string fields, they will act as links to the corresponding fields in the original object. This means that if you change a string field's value on a cloned instance, the field gets changed on the original instance too! This is because unlinke numeric values, strings are stored in memblocks, and a cloned instance has still the same memblock pointers to strings. As this function does not know which fields are strings and which are numeric fields, the function cannot clone string memblocks. It lacks the information about what memblocks to clone.
 // - Calling First()/Last() does not return a cloned instance even if it happens to be the first/last one in the type list. This is because the first/last instance metadata is stored somewhere where I haven't found a way to dig in and change the values. Instead of returning a cloned instance, First()/Last() will return either a naturally created instance, or NULl if all natural instances are deleted and the type list contains only cloned instances.
 //
 // Using the following commands/function on a cloned instance will crash the program:
@@ -105,6 +104,10 @@ Function CloneInstance(instance1)
 	CheckTypeDefinition(instance1)
 	instance2 = CloneMemblock(instance1)
 	
+	// Clone String memblocks To make them Not shared between the two instances.
+	Q_CloneStringFieldMemblocks(instance2)
+	
+	// Fix a Before/After chain
 	Q_setInstanceAfter(instance1, instance2) // Place a mark ON instance1 that instance2 comes After it
 	Q_setInstanceBefore(instance2, instance1) // Place a mark ON instance2 that instance1 comes Before it
 	
