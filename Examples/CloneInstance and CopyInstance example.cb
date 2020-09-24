@@ -1,5 +1,5 @@
 //
-// Cloneinstance(9 and CopyInstance() example
+// Cloneinstance() and CopyInstance() example
 //
 // This example will go through how cloning Type instances and how copying data between Type instances work, and also some issues that they have.
 // CloneInstance(instance) takes one Type instance as a parameter, creates a new one with the same data content and returns it. However, the cloned instance will not appear in the Type list if you iterate it with either a For ... Each loop or with First()/Last()/Before()/After() calls. 
