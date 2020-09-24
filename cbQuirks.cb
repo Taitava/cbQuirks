@@ -88,15 +88,14 @@ EndFunction
 //
 // Makes a copy of a type instance and returns the copy. All field values are copied.
 //
-// Notes about strange behaviour:
-// - Calling First()/Last() does not return a cloned instance even if it happens to be the first/last one in the type list. This is because the first/last instance metadata is stored somewhere where I haven't found a way to dig in and change the values. Instead of returning a cloned instance, First()/Last() will return either a naturally created instance, or NULl if all natural instances are deleted and the type list contains only cloned instances.
+// Note that a cloned instance will not be part of the actual Type _list_! It means that you will not be able to access the cloned instance by For ... Each loop or Before(), After(), First() or Last() calls. You CANNOT use the Insert command to overcome this and add a clone to a list. Believe me, I have tried :(.
+// This is because the first/last instance metadata is stored somewhere where I haven't found a way to dig in and change the values. I could alter the Before/After chain, but that would not be enough without a really working fix for Fisrt() and Last().
 //
 // Using the following commands/function on a cloned instance will crash the program:
-// - Insert: Memory access violation
+// - Insert: Memory access violation. There is no way to make cloned instances to be part of type lists, so do not try to use Insert.
 // - Delete: Memory access violation
 //
 // The following commands/functions/features are tested and work normally for a cloned instance:
-// - For .. Each loops are able to iterate cloned instances correctly. This function repairs the Before/After chain of instances to make loops work. A cloned instance will always apper right after the original instance. It will NOT go to the end of the type list (unless the original instance was at the end of the type list)!
 // - ConvertToInteger() & ConvertToType()
 // - Before() & After()
 //
@@ -107,16 +106,9 @@ Function CloneInstance(instance1)
 	// Clone String memblocks To make them Not shared between the two instances.
 	Q_CloneStringFieldMemblocks(instance2)
 	
-	// Fix a Before/After chain
-	Q_setInstanceAfter(instance1, instance2) // Place a mark ON instance1 that instance2 comes After it
-	Q_setInstanceBefore(instance2, instance1) // Place a mark ON instance2 that instance1 comes Before it
-	
-	// If there is an instance After instance2, we need To make it To know that its New predecessor is instance2 instead of instance1.
-	after_instance2 = Q_getInstanceAfter(instance2)
-	If after_instance2 Then Q_setInstanceBefore(after_instance2, instance2)
-	
-	// TODO: Try To make the Insert command work (= Not To crash)!!!
-	'Insert ConvertToType(instance2), ConvertToType(instance1) // Updates the Before/After pointers of both instances (which we did above already), but I would like To use this To test If we could this way introduce
+	// Clear Before/After pointers. The clone will be an independent instance with no position in a Type list.
+	Q_setInstanceBefore(instance2, 0)
+	Q_setInstanceAfter(instance2, 0)
 	
 	Return instance2
 EndFunction
