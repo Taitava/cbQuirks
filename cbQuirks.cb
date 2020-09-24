@@ -340,7 +340,7 @@ Function Q_getFieldPosition(field_index, fields$)
 	
 	// Iterate all _preceding_ fields To determine where the current Field _starts_. -1 is used so that we will Not accidentally add the current Field's _length_ To the position value, which would lead us To a position of a Field _after_ the current Field.
 	For i = 1 To field_index - 1
-		field_character$ = Mid(fields, i,i)
+		field_character$ = Mid(fields, i,1)
 		If InStr("sif", field_character) Then // sif = String, integer, Float. All of these use 4 bytes of memory space.
 			position + 4
 		ElseIf "h" = field_character Then // h = Short. Takes 2 bytes of memory space.
