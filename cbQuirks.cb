@@ -282,6 +282,10 @@ Function Q_setInstanceBefore(instance, before_value)
 	Q_setInstanceMetaValue(instance, Q_INSTANCE_META_BEFORE, before_value)
 EndFunction
 
+Function Q_setTypeID(instance, type_id)
+	Q_setInstanceMetaValue(instance, Q_INSTANCE_META_TYPE, type_id)
+EndFunction
+
 Function Q_getInstanceMetaValue(instance, meta)
 	Return PeekInt(instance, meta)
 EndFunction
