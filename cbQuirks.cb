@@ -238,6 +238,67 @@ Function MakeEmptyMemblock()
 	Return empty_memblock
 EndFunction
 
+//
+// A fast way to transform contents of a memblock into a normal string value.
+//
+Function MemblockToString(memblock)
+	If MEMBlockSize(memblock) = 0 Then Return "" // Some special memblocks are empty. They are probably created by CoolBasic when handling empty String values.
+
+	// Preparations
+	converter.Q_MemblockStringConverter = New(Q_MemblockStringConverter)
+	converter_pointer = converter
+	string_position = Q_getFieldPosition(1, "s")
+	write_memblock = PeekInt(converter_pointer, string_position)
+	ResizeMEMBlock write_memblock, MEMBlockSize(memblock)
+	
+	// Copy the memblock Data
+	MemCopy memblock, 0, write_memblock, 0, MEMBlockSize(memblock)
+	result$ = converter\stri
+	
+	// Clean up
+	Delete converter // Deletes also write_memblock
+	
+	// Finish
+	Return result
+EndFunction
+
+//
+// A fast way to transform a string valueinto a memblock.
+//
+// Parameters:
+//  - stri: The string that you want to store into a memblock.
+//  - memblock: An optional parameter. If defined, the string will be stored into this particular memblock. Note that the memblock will be resized automatically if it's not the same size as the length of the string. The memblock's content will get completely overwritten. If this parameter is omitted, a new memblock will be created.
+//
+// Returns the memblock where the string was written to.
+//
+Function StringToMemblock(stri$, memblock=0)
+	If "" = stri Then
+		If Not HandleError("StringToMemblock", "An empty s"+"tring was passed a"+"s a parameter. This f"+"unction does n"+"ot yet support storing empty strings into memblocks.") Then Return False
+	EndIf
+	If Not memblock Then
+		// Create a target memblock If we weren't provided one
+		memblock = MakeMEMBlock(Len(stri))
+	Else
+		// Ensure that the target memblock is of correct size
+		If MEMBlockSize(memblock) <> Len(stri) Then ResizeMEMBlock memblock, Len(stri)
+	EndIf
+	
+	// Preparations
+	converter.Q_MemblockStringConverter = New(Q_MemblockStringConverter)
+	converter\stri = stri
+	converter_pointer = converter
+	string_position = Q_getFieldPosition(1, "s")
+	read_memblock = PeekInt(converter_pointer, string_position)
+	
+	// Copy the memblock Data
+	MemCopy read_memblock, 0, memblock, 0, MEMBlockSize(read_memblock)
+	
+	// Clean up
+	Delete converter // Deletes also read_memblock
+	
+	// Finish
+	Return memblock
+EndFunction
 
 // ======================================================================================================================================================
 // INTERNALS
@@ -261,9 +322,16 @@ Type Q_TypeDefinition
 EndType : DefineType(Q_Type, "iis") // iis = integer, integer, string
 
 // TODO: Add a comment describing this Type.
+// TODO: Remove this type and use Q_MemblockStringConverter instead.
 Type Q_EmptyMemblockMaker
 	Field empty_string$
 EndType
+
+// TODO: Add a comment describing this Type.
+Type Q_MemblockStringConverter
+	Field stri$
+EndType
+
 
 // TODO: Add descriptions to the functions below.
 Function Q_getInstanceAfter(instance)

@@ -1,0 +1,34 @@
+// 
+// StringToMemblock() and MemblockToString() example
+// 
+
+// This is just a quick demonstration about how you can easily write a string into a memblock and read a string from a memblock.
+
+SCREEN 800,300
+Include "../cbQuirks.cb"
+
+// 1. Write random stuff into a memblock (with ordinary PokeByte, so StringToMemblock() is not used here)
+memblock_size = 50
+memblock = MakeMEMBlock(memblock_size)
+For i = 0 To memblock_size-1
+	random_byte = Rand(33,126) // ASCII codes 33...126 are all easily printable characters.
+	PokeByte memblock, i, random_byte
+Next i
+Print "Memblock content has been randomized."
+
+// 2. Print it out as a string using MemblockToString()
+Print "Print memblock content: "+MemblockToString(memblock)
+Print
+DeleteMEMBlock memblock
+
+// 3. Write something to a memblock using StringToMemblock() and print it back.
+message$ = "Hello world!"
+memblock = StringToMemblock(message)
+Print "A message has been written into a memblock."
+Print "Memblock size: " + MEMBlockSize(memblock)
+Print "This is the message: " + MemblockToString(memblock)
+
+// 4. We are done here.
+Print
+Print "Press any key to exit."
+WaitKey
