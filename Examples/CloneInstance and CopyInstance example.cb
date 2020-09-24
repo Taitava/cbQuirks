@@ -1,0 +1,85 @@
+//
+// Cloneinstance(9 and CopyInstance() example
+//
+// This example will go through how cloning Type instances and how copying data between Type instances work, and also some issues that they have.
+// CloneInstance(instance) takes one Type instance as a parameter, creates a new one with the same data content and returns it. However, the cloned instance will not appear in the Type list if you iterate it with either a For ... Each loop or with First()/Last()/Before()/After() calls. 
+// CopyInstance(instance1, instance2) is like CloneInstance(), but it works a little bit better and in a different way. First of all it takes two Type instances as parameters, so it requires you to create the target instance yourself, which makes your function call line a little bit longer, but it's not too bad. The second difference is that because CopyInstance does not try to create a new instance from scratch, it does not have any Type list issues. Your copied instance will be part of a Type list just as the original one is too.
+
+// First enlarge the window and include cbQuirks
+SCREEN 600,600 // Enlarge the window from the normal 400,300
+Include "..\cbQuirks.cb"
+
+// Define a Type
+Type TypeA
+	Field my_string$
+	Field my_integer
+	Field my_float#
+	Field my_short As Short
+	Field my_byte As Byte
+EndType : DefineType(TypeA, "sifhb") // This function call gives cbQuirks some meta data about our Type. cbQuirks is not able to figure out the field datatypes by itself, so we need to help it. "sifhb" tells that our first field is a string, the second is an integer, then comes a float, then a short integer, and finally a byte. You can also replace s i and f which characters $ % and # if you feel that they are easier to remember because thats what CB uses for those datatypes.
+
+// Create an instance of TypeA and set some values
+a1.TypeA = New(TypeA)
+a1\my_string = "A1 natural"
+a1\my_integer = 999999999 // The biggest integer supported by the compiler, at least in a hardcoded form.
+a1\my_float = 12345.67890
+a1\my_short = 65535 // The maximum value of a short integer
+a1\my_byte = 255 // The maximum value of a byte
+
+// Clone a1 to a2
+a2.TypeA = CloneInstance(a1)
+a2\my_string = "A2 clone" // Overwrite the previous value "A1 natural"
+
+// Copy a1 to a3
+a3.TypeA = CopyInstance(a1, New(TypeA)) // CopyInstance() returns the second instance pointer, so we can nest New() in the call.
+a3\my_string = "A3 copy" // Overwrite the previous value "A1 natural"
+
+// Loop TypeA to see that a2 is not present in the Type list because it is a clone. a2 however is in the type list because it's created by a New() call.
+For a.TypeA = Each TypeA
+	Print "a\my_string = "+a\my_string
+Next a
+
+// But let's be kind to the a2 and print it too! :)
+Print "Separately printed a2\my_string = " + a2\my_string
+
+Print // An empty line
+
+// Because a2 is a clone, it does not have the Before()/After() relations
+before_a2.TypeA = Before(a2)
+after_a2.TypeA = After(a2)
+If NULL = before_a2 Then Print "Before(a2) is NULL."
+If NULL = after_a2 Then Print "After(a2) is NULL."
+
+Print // An empty line
+
+// Now lets print all the numeric values too to see that the cloning and copying worked for the values too.
+Print pad("my_string" ) + " | " + pad("my_integer" ) + " | " + pad("my_float" ) + " | " + pad("my_short" ) + " | " + pad("my_byte" )
+Print "-----------------------------------------------------------"
+Print pad(a1\my_string) + " | " + pad(a1\my_integer) + " | " + pad(a1\my_float) + " | " + pad(a1\my_short) + " | " + pad(a1\my_byte)
+Print pad(a2\my_string) + " | " + pad(a2\my_integer) + " | " + pad(a2\my_float) + " | " + pad(a2\my_short) + " | " + pad(a2\my_byte)
+Print pad(a3\my_string) + " | " + pad(a3\my_integer) + " | " + pad(a3\my_float) + " | " + pad(a3\my_short) + " | " + pad(a3\my_byte)
+// All numeric values are the same because we didn't touch them after setting them for a1 before any cloning/copying. So it means that the cloning/copying works well.
+
+
+Print
+Print "Press any key to exit."
+WaitKey
+
+// Let's delete stuff just to see how we can crash the program
+Print
+Print "Cleaning up before exiting:"
+Print "Deleting a1..."
+Delete a1 // This works
+Print "Deleting a3..."
+Delete a3 // This works too
+Print "Deleting a2..."
+Delete a2 // CRASH!! BOOM!!! MEMORY ACCESS VIOLATION!!!!
+
+
+// Just a tiny helper to pad values with spaces for printing.
+Function pad(value$)
+	While Len(value) < 10
+		value + " "
+	Wend
+	Return value
+EndFunction
