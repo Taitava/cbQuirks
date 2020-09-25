@@ -27,6 +27,7 @@ memblock = StringToMemblock(message)
 Print "A message has been written into a memblock."
 Print "Memblock size: " + MEMBlockSize(memblock)
 Print "This is the message: " + MemblockToString(memblock)
+Print "Skip one byte from the beginning of the message and limit the length to 9 bytes: " + MemblockToString(memblock, 1,9)
 
 // 4. We are done here.
 Print

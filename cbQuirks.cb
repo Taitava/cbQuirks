@@ -241,18 +241,28 @@ EndFunction
 //
 // A fast way to transform contents of a memblock into a normal string value.
 //
-Function MemblockToString(memblock)
-	If MEMBlockSize(memblock) = 0 Then Return "" // Some special memblocks are empty. They are probably created by CoolBasic when handling empty String values.
+// Parameters:
+//  - memblock: The memblock whose content you want to read into a string
+//  - from (integer, default: 0): From which position to start to read. Think of it like how many bytes (= characters) to skip from the beginning of the memblock. 0 = do not skip anything.
+//  - length (integer, default: -1): How many bytes (= characters) to read from the starting position onward. If under zero, will read everything after the starting position. If 0, results in an empty string.
+//
+Function MemblockToString(memblock, from=0, length=-1)
+	memblock_size = MEMBlockSize(memblock)
+	If memblock_size = 0 Then Return "" // Some special memblocks are empty. They are probably created by CoolBasic when handling empty String values.
+	max_length = memblock_size - from
+	If length < 0 Or length > max_length Then length = max_length
+	If length = 0 Then Return "" // No need To Read anything from the memblock because we were requested 0 characters.
+	If from >= memblock_size Or from < 0 Then Return HandleError("MemblockToString", "Parameter from is %1, but should be between 0 - %2 because the given memblock is of size %3.", from, memblock_size-1, memblock_size)
 
 	// Preparations
 	converter.Q_MemblockStringConverter = New(Q_MemblockStringConverter)
 	converter_pointer = converter
 	string_position = Q_getFieldPosition(1, "s")
 	write_memblock = PeekInt(converter_pointer, string_position)
-	ResizeMEMBlock write_memblock, MEMBlockSize(memblock)
+	ResizeMEMBlock write_memblock, length
 	
 	// Copy the memblock Data
-	MemCopy memblock, 0, write_memblock, 0, MEMBlockSize(memblock)
+	MemCopy memblock, from, write_memblock, 0, length
 	result$ = converter\stri
 	
 	// Clean up
