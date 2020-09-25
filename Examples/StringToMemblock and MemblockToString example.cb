@@ -32,8 +32,26 @@ Print "A message has been written into a memblock."
 Print "Memblock size: " + MEMBlockSize(memblock)
 Print "This is the message: " + MemblockToString(memblock)
 Print "Skip one byte from the beginning of the message and limit the length to 9 bytes: " + MemblockToString(memblock, 1,9)
+Print
+DeleteMEMBlock memblock
 
-// 4. We are done here.
+// 4. Memblock resizing with StringToMemblock()
+memblock = MakeMEMBlock(10)
+message$ = "HELLO"
+Print "We have a memblock of size "+MEMBlockSize(memblock)+". Put a string '"+message+"' there without resizing."
+StringToMemblock(message, memblock)
+Print "Now the memblock content has extra space after the message: " + MemblockToString(memblock)
+Print "Let's do the same insert with automatic resizing."
+StringToMemblock(message, memblock+"resize") // Note the + sign, we are combining the "resize" command to the same parameter with the memblock! This is to avoid increasing the amount of function parameters.
+Print "Now the content has no extra space: " + MemblockToString(memblock) + ". And the memblock size is " + MEMBlockSize(memblock) + "."
+message = "Lorem ipsum dolor sit amet."
+Print "Let's grow our memblock automatically to have enough space for: '"+message+"'"
+StringToMemblock(message, memblock+"grow") // "grow" is less powerful than "resize", it can only enlarge the memblock, while resize can both enlarge and shrink the memblock. Use "grow" when you do not want to accidentally make the memblock smaller than what you have designed it to be.
+// Without a "grow" or "resize" string above, StringToMemblock() would throw an error because the memblock would be too small for our long string.
+Print "Now the memblock size is " + MEMBlockSize(memblock) + "."
+DeleteMEMBlock memblock
+
+// 5. We are done here.
 Print
 Print "Press any key to exit."
 WaitKey

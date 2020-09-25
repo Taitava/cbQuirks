@@ -277,23 +277,46 @@ EndFunction
 //
 // Parameters:
 //  - stri: The string that you want to store into a memblock.
-//  - memblock (default: 0): If defined, the string will be stored into this particular memblock. Note that the memblock will be resized automatically if it's smaller than the length of the string + position. If this parameter is omitted, a new memblock will be created.
+//  - memblock_and_resize (string, default: "0"): If defined, the string will be stored into this particular memblock. If this parameter is omitted, a new memblock will be created.
+//     - This is a string starting with an integer memblock pointer, and optionally containing a word after it:
+//     - memblock + "resize": The memblock will be always resized to match the length of the string + position. No extra space will be left _after_ the string in the memblock. (The position parameter determines whether there will be extra space _before_ the string.)
+//     - memblock + "grow":  The memblock will be resized only if it's smaller than the length of the string + position.
+//     - memblock without a trailing word: Do not resize. Throws an error if the memblock is too small.
+//     - The resize part has no meaning if you do not pass an existing memblock to this function.
 //  - position (integer, default: 0): Defines a starting point where the string will be written in the memblock.
 //
 // Returns the memblock where the string was written to.
 //
-Function StringToMemblock(stri$, memblock=0, position=0)
+Function StringToMemblock(stri$, memblock_and_resize$="0", position=0)
 	If "" = stri Then
 		If Not HandleError("StringToMemblock", "An empty s"+"tring was passed a"+"s a parameter. This f"+"unction does n"+"ot yet support storing empty strings into memblocks.") Then Return False
 	EndIf
+	
+	// Resolve memblock_and_resize
+	memblock = Int(memblock_and_resize) // Get the starting integer from memblock_and_resize. Strips OFF all letters.
+	resize$ = Lower(Trim(Replace(memblock_and_resize, Str(memblock), ""))) // Remove the integer from memblock_and_resize To get the trailing word. Trim it in Case it has any wrapping spaces.
+	
+	// Ensure that we have a memblock And that it's of correct size
 	min_length = position + Len(stri) // Minimun length For a memblock. It does Not matter If the memblock is bigger than this.
 	If Not memblock Then
 		// Create a target memblock If we weren't provided one
 		memblock = MakeMEMBlock(min_length)
 	Else
 		// Ensure that the target memblock is of correct size
-		// Resize it If it's smaller than min_length, but do Not shrink bigger memblocks.
-		If MEMBlockSize(memblock) < min_length Then ResizeMEMBlock memblock, min_length
+		memblock_size = MEMBlockSize(memblock)
+		Select resize
+		Case ""
+			// No resizing is allowed. Throw an error If the size is Not big enough.
+			If memblock_size < min_length Then Return HandleError("StringToMemblock", "The passed memblock (%1) is too small a"+"nd resizing is n"+"ot allowed. Memblock size: %2. Minimum size: %3", memblock, memblock_size, min_length)
+		Case "grow"
+			// Resize it If it's smaller than min_length, but do Not shrink bigger memblocks.
+			If memblock_size < min_length Then ResizeMEMBlock memblock, min_length
+		Case "resize"
+			// Resize whenever the size is different than min_length.
+			If memblock_size <> min_length Then ResizeMEMBlock memblock, min_length
+		Default
+			If Not HandleError("StringToMemblock", "Unrecognised resize command '%1'. The passed memblock_and_resize parameter was: %2", resize, memblock_and_resize) Then Return False
+		EndSelect
 	EndIf
 	
 	// Preparations
