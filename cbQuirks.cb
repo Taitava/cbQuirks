@@ -277,20 +277,23 @@ EndFunction
 //
 // Parameters:
 //  - stri: The string that you want to store into a memblock.
-//  - memblock: An optional parameter. If defined, the string will be stored into this particular memblock. Note that the memblock will be resized automatically if it's not the same size as the length of the string. The memblock's content will get completely overwritten. If this parameter is omitted, a new memblock will be created.
+//  - memblock (default: 0): If defined, the string will be stored into this particular memblock. Note that the memblock will be resized automatically if it's smaller than the length of the string + position. If this parameter is omitted, a new memblock will be created.
+//  - position (integer, default: 0): Defines a starting point where the string will be written in the memblock.
 //
 // Returns the memblock where the string was written to.
 //
-Function StringToMemblock(stri$, memblock=0)
+Function StringToMemblock(stri$, memblock=0, position=0)
 	If "" = stri Then
 		If Not HandleError("StringToMemblock", "An empty s"+"tring was passed a"+"s a parameter. This f"+"unction does n"+"ot yet support storing empty strings into memblocks.") Then Return False
 	EndIf
+	min_length = position + Len(stri) // Minimun length For a memblock. It does Not matter If the memblock is bigger than this.
 	If Not memblock Then
 		// Create a target memblock If we weren't provided one
-		memblock = MakeMEMBlock(Len(stri))
+		memblock = MakeMEMBlock(min_length)
 	Else
 		// Ensure that the target memblock is of correct size
-		If MEMBlockSize(memblock) <> Len(stri) Then ResizeMEMBlock memblock, Len(stri)
+		// Resize it If it's smaller than min_length, but do Not shrink bigger memblocks.
+		If MEMBlockSize(memblock) < min_length Then ResizeMEMBlock memblock, min_length
 	EndIf
 	
 	// Preparations
@@ -301,7 +304,7 @@ Function StringToMemblock(stri$, memblock=0)
 	read_memblock = PeekInt(converter_pointer, string_position)
 	
 	// Copy the memblock Data
-	MemCopy read_memblock, 0, memblock, 0, MEMBlockSize(read_memblock)
+	MemCopy read_memblock, 0, memblock, position, MEMBlockSize(read_memblock)
 	
 	// Clean up
 	Delete converter // Deletes also read_memblock
@@ -309,6 +312,7 @@ Function StringToMemblock(stri$, memblock=0)
 	// Finish
 	Return memblock
 EndFunction
+
 
 // ======================================================================================================================================================
 // INTERNALS

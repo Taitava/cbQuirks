@@ -16,8 +16,12 @@ For i = 0 To memblock_size-1
 Next i
 Print "Memblock content has been randomized."
 
-// 2. Print it out as a string using MemblockToString()
-Print "Print memblock content: "+MemblockToString(memblock)
+// 2. Print it out as a string using MemblockToString() and then 
+Print "Print memblock content:"
+Print MemblockToString(memblock)
+StringToMemblock(" I LOVE CATS! ", memblock, 15)
+Print "Text substituted in the middle of the memblock:"
+Print MemblockToString(memblock)
 Print
 DeleteMEMBlock memblock
 
