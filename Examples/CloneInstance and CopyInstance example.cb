@@ -1,9 +1,9 @@
 //
-// Cloneinstance() and CopyInstance() example
+// Type.CloneInstance() and Type.CopyInstance() example
 //
 // This example will go through how cloning Type instances and how copying data between Type instances work, and also some issues that they have.
-// CloneInstance(instance) takes one Type instance as a parameter, creates a new one with the same data content and returns it. However, the cloned instance will not appear in the Type list if you iterate it with either a For ... Each loop or with First()/Last()/Before()/After() calls. 
-// CopyInstance(instance1, instance2) is like CloneInstance(), but it works a little bit better and in a different way. First of all it takes two Type instances as parameters, so it requires you to create the target instance yourself, which makes your function call line a little bit longer, but it's not too bad. The second difference is that because CopyInstance does not try to create a new instance from scratch, it does not have any Type list issues. Your copied instance will be part of a Type list just as the original one is too.
+// Type.CloneInstance(instance) takes one Type instance as a parameter, creates a new one with the same data content and returns it. However, the cloned instance will not appear in the Type list if you iterate it with either a For ... Each loop or with First()/Last()/Before()/After() calls. 
+// Type.CopyInstance(instance1, instance2) is like Type.CloneInstance(), but it works a little bit better and in a different way. First of all it takes two Type instances as parameters, so it requires you to create the target instance yourself, which makes your function call line a little bit longer, but it's not too bad. The second difference is that because Type.CopyInstance does not try to create a new instance from scratch, it does not have any Type list issues. Your copied instance will be part of a Type list just as the original one is too.
 
 // First enlarge the window and include cbQuirks
 SCREEN 600,600 // Enlarge the window from the normal 400,300
@@ -16,7 +16,7 @@ Type TypeA
 	Field my_float#
 	Field my_short As Short
 	Field my_byte As Byte
-EndType : DefineType(TypeA, "sifhb") // This function call gives cbQuirks some meta data about our Type. cbQuirks is not able to figure out the field datatypes by itself, so we need to help it. "sifhb" tells that our first field is a string, the second is an integer, then comes a float, then a short integer, and finally a byte. You can also replace s i and f which characters $ % and # if you feel that they are easier to remember because thats what CB uses for those datatypes.
+EndType : Type.Define(TypeA, "sifhb") // This function call gives cbQuirks some meta data about our Type. cbQuirks is not able to figure out the field datatypes by itself, so we need to help it. "sifhb" tells that our first field is a string, the second is an integer, then comes a float, then a short integer, and finally a byte. You can also replace s i and f which characters $ % and # if you feel that they are easier to remember because thats what CB uses for those datatypes.
 
 // Create an instance of TypeA and set some values
 a1.TypeA = New(TypeA)
@@ -27,11 +27,11 @@ a1\my_short = 65535 // The maximum value of a short integer
 a1\my_byte = 255 // The maximum value of a byte
 
 // Clone a1 to a2
-a2.TypeA = CloneInstance(a1)
+a2.TypeA = Type.CloneInstance(a1)
 a2\my_string = "A2 clone" // Overwrite the previous value "A1 natural"
 
 // Copy a1 to a3
-a3.TypeA = CopyInstance(a1, New(TypeA)) // CopyInstance() returns the second instance pointer, so we can nest New() in the call.
+a3.TypeA = Type.CopyInstance(a1, New(TypeA)) // Type.CopyInstance() returns the second instance pointer, so we can nest New() in the call.
 a3\my_string = "A3 copy" // Overwrite the previous value "A1 natural"
 
 // Loop TypeA to see that a2 is not present in the Type list because it is a clone. a2 however is in the type list because it's created by a New() call.

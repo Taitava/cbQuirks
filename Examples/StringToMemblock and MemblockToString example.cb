@@ -1,5 +1,5 @@
 // 
-// StringToMemblock() and MemblockToString() example
+// String.ToMemblock() and Memblock.ToString() example
 // 
 
 // This is just a quick demonstration about how you can easily write a string into a memblock and read a string from a memblock.
@@ -7,7 +7,7 @@
 SCREEN 800,300
 Include "../cbQuirks.cb"
 
-// 1. Write random stuff into a memblock (with ordinary PokeByte, so StringToMemblock() is not used here)
+// 1. Write random stuff into a memblock (with ordinary PokeByte, so String.ToMemblock() is not used here)
 memblock_size = 50
 memblock = MakeMEMBlock(memblock_size)
 For i = 0 To memblock_size-1
@@ -16,38 +16,38 @@ For i = 0 To memblock_size-1
 Next i
 Print "Memblock content has been randomized."
 
-// 2. Print it out as a string using MemblockToString() and then 
+// 2. Print it out as a string using Memblock.ToString() and then 
 Print "Print memblock content:"
-Print MemblockToString(memblock)
-StringToMemblock(" I LOVE CATS! ", memblock, 15)
+Print Memblock.ToString(memblock)
+String.ToMemblock(" I LOVE CATS! ", memblock, 15)
 Print "Text substituted in the middle of the memblock:"
-Print MemblockToString(memblock)
+Print Memblock.ToString(memblock)
 Print
 DeleteMEMBlock memblock
 
-// 3. Write something to a memblock using StringToMemblock() and print it back.
+// 3. Write something to a memblock using String.ToMemblock() and print it back.
 message$ = "Hello world!"
-memblock = StringToMemblock(message)
+memblock = String.ToMemblock(message)
 Print "A message has been written into a memblock."
 Print "Memblock size: " + MEMBlockSize(memblock)
-Print "This is the message: " + MemblockToString(memblock)
-Print "Skip one byte from the beginning of the message and limit the length to 9 bytes: " + MemblockToString(memblock, 1,9)
+Print "This is the message: " + Memblock.ToString(memblock)
+Print "Skip one byte from the beginning of the message and limit the length to 9 bytes: " + Memblock.ToString(memblock, 1,9)
 Print
 DeleteMEMBlock memblock
 
-// 4. Memblock resizing with StringToMemblock()
+// 4. Memblock resizing with String.ToMemblock()
 memblock = MakeMEMBlock(10)
 message$ = "HELLO"
 Print "We have a memblock of size "+MEMBlockSize(memblock)+". Put a string '"+message+"' there without resizing."
-StringToMemblock(message, memblock)
-Print "Now the memblock content has extra space after the message: " + MemblockToString(memblock)
+String.ToMemblock(message, memblock)
+Print "Now the memblock content has extra space after the message: " + Memblock.ToString(memblock)
 Print "Let's do the same insert with automatic resizing."
-StringToMemblock(message, memblock+"resize") // Note the + sign, we are combining the "resize" command to the same parameter with the memblock! This is to avoid increasing the amount of function parameters.
-Print "Now the content has no extra space: " + MemblockToString(memblock) + ". And the memblock size is " + MEMBlockSize(memblock) + "."
+String.ToMemblock(message, memblock+"resize") // Note the + sign, we are combining the "resize" command to the same parameter with the memblock! This is to avoid increasing the amount of function parameters.
+Print "Now the content has no extra space: " + Memblock.ToString(memblock) + ". And the memblock size is " + MEMBlockSize(memblock) + "."
 message = "Lorem ipsum dolor sit amet."
 Print "Let's grow our memblock automatically to have enough space for: '"+message+"'"
-StringToMemblock(message, memblock+"grow") // "grow" is less powerful than "resize", it can only enlarge the memblock, while resize can both enlarge and shrink the memblock. Use "grow" when you do not want to accidentally make the memblock smaller than what you have designed it to be.
-// Without a "grow" or "resize" string above, StringToMemblock() would throw an error because the memblock would be too small for our long string.
+String.ToMemblock(message, memblock+"grow") // "grow" is less powerful than "resize", it can only enlarge the memblock, while resize can both enlarge and shrink the memblock. Use "grow" when you do not want to accidentally make the memblock smaller than what you have designed it to be.
+// Without a "grow" or "resize" string above, String.ToMemblock() would throw an error because the memblock would be too small for our long string.
 Print "Now the memblock size is " + MEMBlockSize(memblock) + "."
 DeleteMEMBlock memblock
 

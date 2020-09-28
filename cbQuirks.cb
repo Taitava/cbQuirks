@@ -13,10 +13,10 @@
 
 //
 // Some Type related functions of Quirks require special information about your Type lists, which Quirks is unfortunately not able to figure out by itself.
-// You can use DefineType() to tell Quirks what kind of fields your Type has. You don't need to tell the names of the fields - just the datatypes and the order of the fields.
+// You can use Type.Define() to tell Quirks what kind of fields your Type has. You don't need to tell the names of the fields - just the datatypes and the order of the fields.
 //
 // Parameters:
-//  - type_id (integer): Submit the type list variable. If you have in you code i.e. Type Human ... EndType, you should call this function like: DefineType(Human, ...). You can use the type name as a variable, CB does not yell about it. It's a simple integer, your first type is number 1, second is number 2 etc.
+//  - type_id (integer): Submit the type list variable. If you have in you code i.e. Type Human ... EndType, you should call this function like: Type.Define(Human, ...). You can use the type name as a variable, CB does not yell about it. It's a simple integer, your first type is number 1, second is number 2 etc.
 //  - fields (string): A list of characters describing the datatypes of your type's fields - in the correct order! Characters: s = string, i = integer, f = float, h = short, b = byte. You can also use $ in place of s, # in place of f, and % in place of i, if those feel more familiar to you.
 //
 // Example code:
@@ -26,34 +26,34 @@
 //        Field year_born As Short
 //        Field days_lived_so_far As Integer
 //        Field height_cm As Byte // Does not serve well people taller than 255 cm :( - but it's just an example after all :)
-//    EndType : DefineType(Human, "sfhib") // Another format for the same result: DefineType(Human, "$#h%b")
+//    EndType : Type.Define(Human, "sfhib") // Another format for the same result: Type.Define(Human, "$#h%b")
 //
-// If it doesn't look too messy to you, I suggest that you write the DefineType() call on the same line with EndType. This way the Type structure and the function call look more "connected".
-Function DefineType(type_id, fields$)
-	td.Q_TypeDefinition = New(Q_TypeDefinition)
+// If it doesn't look too messy to you, I suggest that you write the Type.Define() call on the same line with EndType. This way the Type structure and the function call look more "connected".
+Function Type.Define(type_id, fields$)
+	td.Q_Type_Definition = New(Q_Type_Definition)
 	td\id = td
 	td\type_id = type_id
-	td\fields = Q_SanitizeTypeFields(fields)
+	td\fields = Q.Type.SanitizeFields(fields)
 	td\count_fields = Len(td\fields)
 EndFunction
 
 
 //
-// Tries to determine if your Type structure's fields are correctly described in your DefineType() call next to the Type structure. You can call it yourself if you want, but it's also called automatically when needed.
+// Tries to determine if your Type structure's fields are correctly described in your Type.Define() call next to the Type structure. You can call it yourself if you want, but it's also called automatically when needed.
 //
 // The test is really simple and has some pitfalls:
 //  - The test does not notice if your fields are in an incorrect order. Take the following Type for example:
 //        Type MyType
 //            Field f1 As String
 //            Field f2 As Byte
-//        EndType : DefineType(MyType, "bs")
+//        EndType : Type.Define(MyType, "bs")
 //        It has the fields described in an incorrect order "bs" when it should be "sb". In this case the test will pass and the function will return True, which is wrong.
 //  - The test can fail to count the number of fields if there is an incorrect datatype. Take the following Type for example:
 //        Type MyType
 //            Field f1 As String
 //            Field f2 As Short
 //            Field f3 As Short
-//        EndType : DefineType(MyType, "si")
+//        EndType : Type.Define(MyType, "si")
 //        The description contains one string and one integer. The string is correct in every way, but the integer is a wrong datatype. Also the third field (a Short) is lacking from the description.
 //        As the size of two Shorts is 2 + 2 = 4 bytes, it's the same size of one Integer (4 bytes). This makes the test think that the description is correct, because it matches the actual memory space
 //        reserved for a type instance. In this case the function will return True, which is wrong.
@@ -64,23 +64,23 @@ EndFunction
 //  - instance (integer): We need an instance of a Type. Unfortunately we cannot use only a type id, because we need to measure an actual memblock's size. It does not matter which instance you pass or what values it has in its fields. The instance will not be modified in any way.
 //  - freak_out (True/False): In case the test fails, the default behaviour of this function is to end the program and display an error message. You can pass False to supress the error and to continue executing your program. In this case the function returns False if the test failed, True otherwise.
 //
-Function CheckTypeDefinition(instance, freak_out=1)
-	type_id = getTypeID(instance)
-	td.Q_TypeDefinition = Q_getTypeDefinition(type_id)
+Function Type.CheckDefinition(instance, freak_out=1)
+	type_id = Type.getTypeID(instance)
+	td.Q_Type_Definition = Q.Type.getDefinition(type_id)
 	If td = NULL Then
-		If freak_out Then HandleError("CheckTypeDefinition", "DefineType() was n"+"ot called fo"+"r Type %1. Go through your Type structures a"+"nd see which one does n"+"ot have a DefineType() call with it.", type_id)
+		If freak_out Then Error.Handle("Type.CheckDefinition", "Type.Define() was n"+"ot called fo"+"r Type %1. Go through your Type structures a"+"nd see which one does n"+"ot have a Type.Define() call with it.", type_id)
 		Return False
 	EndIf
 	
-	// Calculate the size of fields by checking how the fields were defined in a DefineType() call
-	data_size_from_definition = Q_getAllFieldsSize(type_id)
+	// Calculate the size of fields by checking how the fields were defined in a Type.Define() call
+	data_size_from_definition = Q.Type.getAllFieldsSize(type_id)
 	
 	// Calculate the real size from the memblock size
-	data_size_real = MEMBlockSize(instance) - Q_INSTANCE_FIELDS_START - Q_INSTANCE_META_END_PADDING
+	data_size_real = MEMBlockSize(instance) - Q.TYPE.INSTANCE_FIELDS_START - Q.TYPE.INSTANCE_META_END_PADDING
 	
 	// Check the result
 	defined_correctly = (data_size_from_definition = data_size_real)
-	If (Not defined_correctly) And freak_out Then HandleError("CheckTypeDefinition", "The fields in Type %1 do n"+"ot match with the DefineType(%1, %2) call. Check the amount of fields a"+"nd make sure their datatypes are described with correct letters in the call. (Test: %3 is wrong, should be %4)", type_id, Chr(34)+td\fields+Chr(34), data_size_from_definition, data_size_real)
+	If (Not defined_correctly) And freak_out Then Error.Handle("Type.CheckDefinition", "The fields in Type %1 do n"+"ot match with the Type.Define(%1, %2) call. Check the amount of fields a"+"nd make sure their datatypes are described with correct letters in the call. (Test: %3 is wrong, should be %4)", type_id, Chr(34)+td\fields+Chr(34), data_size_from_definition, data_size_real)
 	Return defined_correctly
 EndFunction
 
@@ -99,16 +99,16 @@ EndFunction
 // - ConvertToInteger() & ConvertToType()
 // - Before() & After()
 //
-Function CloneInstance(instance1)
-	CheckTypeDefinition(instance1)
-	instance2 = CloneMemblock(instance1)
+Function Type.CloneInstance(instance1)
+	Type.CheckDefinition(instance1)
+	instance2 = Memblock.Clone(instance1)
 	
 	// Clone String memblocks To make them Not shared between the two instances.
-	Q_CloneStringFieldMemblocks(instance2)
+	Q.Type.CloneStringFieldMemblocks(instance2)
 	
 	// Clear Before/After pointers. The clone will be an independent instance with no position in a Type list.
-	Q_setInstanceBefore(instance2, 0)
-	Q_setInstanceAfter(instance2, 0)
+	Q.Type.setInstanceBefore(instance2, 0)
+	Q.Type.setInstanceAfter(instance2, 0)
 	
 	Return instance2
 EndFunction
@@ -116,31 +116,31 @@ EndFunction
 
 //
 // Copies all field data from one instance to another.
-// This function should generate more stable results than CloneInstance(), because it uses an existing instance as a target and does not create a completely new instance.
+// This function should generate more stable results than Type.CloneInstance(), because it uses an existing instance as a target and does not create a completely new instance.
 //
-// Returns the passed to_instance, so you can do nested instance creation like second_instance = CopyInstance(first_instance, New(MyType))
+// Returns the passed to_instance, so you can do nested instance creation like second_instance = Type.CopyInstance(first_instance, New(MyType))
 //
-Function CopyInstance(from_instance, to_instance)
+Function Type.CopyInstance(from_instance, to_instance)
 	
 	// Some checks Before doing anything
-	CheckTypeDefinition(from_instance)
-	If Not isSameType(from_instance, to_instance) Then
-		If Not HandleError("CopyInstance", "This Function is n"+"ot (YET) capable of copying d"+"ata from one Type To another. Use instances of same Type only!") Then Return to_instance
+	Type.CheckDefinition(from_instance)
+	If Not Type.isSameType(from_instance, to_instance) Then
+		If Not Error.Handle("Type.CopyInstance", "This Function is n"+"ot (YET) capable of copying d"+"ata from one Type To another. Use instances of same Type only!") Then Return to_instance
 	EndIf
 	If from_instance = to_instance Then
-		If Not HandleError("CopyInstance", "You submitted the same instance twice: %1 a"+"nd %2.", from_instance, to_instance) Then Return to_instance
+		If Not Error.Handle("Type.CopyInstance", "You submitted the same instance twice: %1 a"+"nd %2.", from_instance, to_instance) Then Return to_instance
 	EndIf
 
 	// Remove String memblocks from the target because they will Not be needed And we do Not want To clogg up the memory with unused memblocks.
-	Q_DeleteStringFieldMemblocks(to_instance)
+	Q.Type.DeleteStringFieldMemblocks(to_instance)
 	
 	// Do the actual Data copying
 	size = MEMBlockSize(from_instance)
-	data_length = size-Q_INSTANCE_FIELDS_START // TODO: Might use Q_getAllFieldsSize() instead.
-	MemCopy from_instance, Q_INSTANCE_FIELDS_START, to_instance, Q_INSTANCE_FIELDS_START, data_length
+	data_length = size-Q.TYPE.INSTANCE_FIELDS_START // TODO: Might use Q.Type.getAllFieldsSize() instead.
+	MemCopy from_instance, Q.TYPE.INSTANCE_FIELDS_START, to_instance, Q.TYPE.INSTANCE_FIELDS_START, data_length
 	
 	// Clone String memblocks To make them Not shared between the two instances.
-	Q_CloneStringFieldMemblocks(to_instance)
+	Q.Type.CloneStringFieldMemblocks(to_instance)
 	
 	Return to_instance
 EndFunction
@@ -149,12 +149,12 @@ EndFunction
 // Submit a type instance to this function and it reads an integer from it that tells which Type the instance belongs to.
 // The returned value is a small integer like 1, 2, 3 ...
 //
-Function getTypeID(instance)
-	Return PeekInt(instance, Q_INSTANCE_META_TYPE)
+Function Type.getTypeID(instance)
+	Return PeekInt(instance, Q.TYPE.INSTANCE_META_TYPE)
 EndFunction
 
-Function isSameType(instance1, instance2)
-	Return getTypeID(instance1) = getTypeID(instance2)
+Function Type.isSameType(instance1, instance2)
+	Return Type.getTypeID(instance1) = Type.getTypeID(instance2)
 EndFunction
 
 
@@ -163,10 +163,10 @@ EndFunction
 // Functions that do not rely on any weird behaviour of CoolBasic, but which are just trivial helpers. Also public.
 // ======================================================================================================================================================
 
-Function CloneMemblock(memblock1)
+Function Memblock.Clone(memblock1)
 	size = MEMBlockSize(memblock1)
 	If 0 = size Then
-		Return MakeEmptyMemblock()
+		Return Memblock.MakeEmpty()
 	Else
 		// Proceed normally
 		memblock2 = MakeMEMBlock(size)
@@ -179,7 +179,7 @@ EndFunction
 // Iterates the characters of sample$ and ensures that all of them are present in allowed_characters$.
 // If any characters of sample$ are not found in allowed_chracters$, those characters will be returned.
 //
-Function UnmatchingCharacters(sample$, allowed_characters$, ignore_case=0)
+Function String.UnmatchingCharacters(sample$, allowed_characters$, ignore_case=0)
 	If ignore_case Then
 		sample = Lower(sample)
 		allowed_characters = Lower(allowed_characters)
@@ -200,14 +200,14 @@ EndFunction
 //  - If you return True, the caller function will continue its execution more or less normally.
 // I'd still suggest you to just end the program.
 //
-Function HandleError$(function_name$, message$, variable1$="", variable2$="", variable3$="", variable4$="", variable5$="")
-	MakeError ScaffoldErrorMessage(function_name$, message$, variable1, variable2, variable3, variable4, variable5)
+Function Error.Handle$(function_name$, message$, variable1$="", variable2$="", variable3$="", variable4$="", variable5$="")
+	MakeError Error.ScaffoldMessage(function_name$, message$, variable1, variable2, variable3, variable4, variable5)
 EndFunction
 
 //
 // You can override this function by defining another function with the same name, but without the $ character.
 //
-Function ScaffoldErrorMessage$(function_name$, message$, variable1$="", variable2$="", variable3$="", variable4$="", variable5$="")
+Function Error.ScaffoldMessage$(function_name$, message$, variable1$="", variable2$="", variable3$="", variable4$="", variable5$="")
 	message = Replace(message, "%1", variable1)
 	message = Replace(message, "%2", variable2)
 	message = Replace(message, "%3", variable3)
@@ -219,12 +219,12 @@ EndFunction
 //
 // Creates a zero size memblock that can be used to represent empty string values.
 //
-Function MakeEmptyMemblock()
+Function Memblock.MakeEmpty()
 	// TODO: Improve comments in the Function
 	// Preparation
-	maker.Q_EmptyMemblockMaker = New(Q_EmptyMemblockMaker)
+	maker.Q.Memblock.EmptyMemblockMaker = New(Q_Memblock_EmptyMemblockMaker)
 	maker_pointer = maker
-	empty_string_position = Q_getFieldPosition(1, "s")
+	empty_string_position = Q.Type.getFieldPosition(1, "s")
 	
 	// Get an empty memblock from the maker instance
 	empty_memblock = PeekInt(maker_pointer, empty_string_position)
@@ -246,18 +246,18 @@ EndFunction
 //  - from (integer, default: 0): From which position to start to read. Think of it like how many bytes (= characters) to skip from the beginning of the memblock. 0 = do not skip anything.
 //  - length (integer, default: -1): How many bytes (= characters) to read from the starting position onward. If under zero, will read everything after the starting position. If 0, results in an empty string.
 //
-Function MemblockToString(memblock, from=0, length=-1)
+Function Memblock.ToString(memblock, from=0, length=-1)
 	memblock_size = MEMBlockSize(memblock)
 	If memblock_size = 0 Then Return "" // Some special memblocks are empty. They are probably created by CoolBasic when handling empty String values.
 	max_length = memblock_size - from
 	If length < 0 Or length > max_length Then length = max_length
 	If length = 0 Then Return "" // No need To Read anything from the memblock because we were requested 0 characters.
-	If from >= memblock_size Or from < 0 Then Return HandleError("MemblockToString", "Parameter from is %1, but should be between 0 - %2 because the given memblock is of size %3.", from, memblock_size-1, memblock_size)
+	If from >= memblock_size Or from < 0 Then Return Error.Handle("Memblock.ToString", "Parameter from is %1, but should be between 0 - %2 because the given memblock is of size %3.", from, memblock_size-1, memblock_size)
 
 	// Preparations
-	converter.Q_MemblockStringConverter = New(Q_MemblockStringConverter)
+	converter.Q_Memblock_StringConverter = New(Q_Memblock_StringConverter)
 	converter_pointer = converter
-	string_position = Q_getFieldPosition(1, "s")
+	string_position = Q.Type.getFieldPosition(1, "s")
 	write_memblock = PeekInt(converter_pointer, string_position)
 	ResizeMEMBlock write_memblock, length
 	
@@ -287,9 +287,9 @@ EndFunction
 //
 // Returns the memblock where the string was written to.
 //
-Function StringToMemblock(stri$, memblock_and_resize$="0", position=0)
+Function String.ToMemblock(stri$, memblock_and_resize$="0", position=0)
 	If "" = stri Then
-		If Not HandleError("StringToMemblock", "An empty s"+"tring was passed a"+"s a parameter. This f"+"unction does n"+"ot yet support storing empty strings into memblocks.") Then Return False
+		If Not Error.Handle("String.ToMemblock", "An empty s"+"tring was passed a"+"s a parameter. This f"+"unction does n"+"ot yet support storing empty strings into memblocks.") Then Return False
 	EndIf
 	
 	// Resolve memblock_and_resize
@@ -307,7 +307,7 @@ Function StringToMemblock(stri$, memblock_and_resize$="0", position=0)
 		Select resize
 		Case ""
 			// No resizing is allowed. Throw an error If the size is Not big enough.
-			If memblock_size < min_length Then Return HandleError("StringToMemblock", "The passed memblock (%1) is too small a"+"nd resizing is n"+"ot allowed. Memblock size: %2. Minimum size: %3", memblock, memblock_size, min_length)
+			If memblock_size < min_length Then Return Error.Handle("String.ToMemblock", "The passed memblock (%1) is too small a"+"nd resizing is n"+"ot allowed. Memblock size: %2. Minimum size: %3", memblock, memblock_size, min_length)
 		Case "grow"
 			// Resize it If it's smaller than min_length, but do Not shrink bigger memblocks.
 			If memblock_size < min_length Then ResizeMEMBlock memblock, min_length
@@ -315,15 +315,15 @@ Function StringToMemblock(stri$, memblock_and_resize$="0", position=0)
 			// Resize whenever the size is different than min_length.
 			If memblock_size <> min_length Then ResizeMEMBlock memblock, min_length
 		Default
-			If Not HandleError("StringToMemblock", "Unrecognised resize command '%1'. The passed memblock_and_resize parameter was: %2", resize, memblock_and_resize) Then Return False
+			If Not Error.Handle("String.ToMemblock", "Unrecognised resize command '%1'. The passed memblock_and_resize parameter was: %2", resize, memblock_and_resize) Then Return False
 		EndSelect
 	EndIf
 	
 	// Preparations
-	converter.Q_MemblockStringConverter = New(Q_MemblockStringConverter)
+	converter.Q_Memblock_StringConverter = New(Q_Memblock_StringConverter)
 	converter\stri = stri
 	converter_pointer = converter
-	string_position = Q_getFieldPosition(1, "s")
+	string_position = Q.Type.getFieldPosition(1, "s")
 	read_memblock = PeekInt(converter_pointer, string_position)
 	
 	// Copy the memblock Data
@@ -342,84 +342,84 @@ EndFunction
 // Functions and other structures that are not designed to be called/used outside of this library.
 // ======================================================================================================================================================
 
-Const Q_DATATYPE_LETTERS = "sifhb" // s: string, i: integer, f: float, h: short, b: byte
+Const Q.TYPE.DATATYPE_LETTERS = "sifhb" // s: string, i: integer, f: float, h: short, b: byte
 
 // Define type instance memblock positions for different attributes
-Const Q_INSTANCE_META_BEFORE = 0
-Const Q_INSTANCE_META_AFTER = 4
-Const Q_INSTANCE_META_TYPE = 8 // Not used at the moment, but here it is just for the record.
-Const Q_INSTANCE_FIELDS_START = 12
-Const Q_INSTANCE_META_END_PADDING = 4 // A number of bytes that have no known meaning in the end of an instance memblock. I do not know if it's something that really has no use, but at least so far I haven't figured out about what it would be used for, so at least now we do not use these bytes for any specific feature. But we do take them into account when doing calculations with the size of an instance memblock.
+Const Q.TYPE.INSTANCE_META_BEFORE = 0
+Const Q.TYPE.INSTANCE_META_AFTER = 4
+Const Q.TYPE.INSTANCE_META_TYPE = 8 // Not used at the moment, but here it is just for the record.
+Const Q.TYPE.INSTANCE_FIELDS_START = 12
+Const Q.TYPE.INSTANCE_META_END_PADDING = 4 // A number of bytes that have no known meaning in the end of an instance memblock. I do not know if it's something that really has no use, but at least so far I haven't figured out about what it would be used for, so at least now we do not use these bytes for any specific feature. But we do take them into account when doing calculations with the size of an instance memblock.
 
-Type Q_TypeDefinition
+Type Q_Type_Definition
 	Field id // An internal (random) integer pointer To this instance
 	Field type_id // A constant order number given by CoolBasic compiler. I.e. Q_Type also has its own type_id.
 	Field fields$
 	Field count_fields
-EndType : DefineType(Q_Type, "iis") // iis = integer, integer, string
+EndType : Type.Define(Q_Type, "iis") // iis = integer, integer, string
 
 // TODO: Add a comment describing this Type.
-// TODO: Remove this type and use Q_MemblockStringConverter instead.
-Type Q_EmptyMemblockMaker
+// TODO: Remove this type and use Q_Memblock_StringConverter instead.
+Type Q_Memblock_EmptyMemblockMaker
 	Field empty_string$
 EndType
 
 // TODO: Add a comment describing this Type.
-Type Q_MemblockStringConverter
+Type Q_Memblock_StringConverter
 	Field stri$
 EndType
 
 
 // TODO: Add descriptions to the functions below.
-Function Q_getInstanceAfter(instance)
-	Return Q_getInstanceMetaValue(instance, Q_INSTANCE_META_AFTER)
+Function Q.Type.getInstanceAfter(instance)
+	Return Q.Type.getInstanceMetaValue(instance, Q.TYPE.INSTANCE_META_AFTER)
 EndFunction
 
-Function Q_getInstanceBefore(instance)
-	Return Q_getInstanceMetaValue(instance, Q_INSTANCE_META_BEFORE)
+Function Q.Type.getInstanceBefore(instance)
+	Return Q.Type.getInstanceMetaValue(instance, Q.TYPE.INSTANCE_META_BEFORE)
 EndFunction
 
-Function Q_setInstanceAfter(instance, after_value)
-	Q_setInstanceMetaValue(instance, Q_INSTANCE_META_AFTER, after_value)
+Function Q.Type.setInstanceAfter(instance, after_value)
+	Q.Type.setInstanceMetaValue(instance, Q.TYPE.INSTANCE_META_AFTER, after_value)
 EndFunction
 
-Function Q_setInstanceBefore(instance, before_value)
-	Q_setInstanceMetaValue(instance, Q_INSTANCE_META_BEFORE, before_value)
+Function Q.Type.setInstanceBefore(instance, before_value)
+	Q.Type.setInstanceMetaValue(instance, Q.TYPE.INSTANCE_META_BEFORE, before_value)
 EndFunction
 
-Function Q_setTypeID(instance, type_id)
-	Q_setInstanceMetaValue(instance, Q_INSTANCE_META_TYPE, type_id)
+Function Q.Type.setTypeID(instance, type_id)
+	Q.Type.setInstanceMetaValue(instance, Q.TYPE.INSTANCE_META_TYPE, type_id)
 EndFunction
 
-Function Q_getInstanceMetaValue(instance, meta)
+Function Q.Type.getInstanceMetaValue(instance, meta)
 	Return PeekInt(instance, meta)
 EndFunction
 
-Function Q_setInstanceMetaValue(instance, meta, value)
+Function Q.Type.setInstanceMetaValue(instance, meta, value)
 	PokeInt instance, meta, value
 EndFunction
 
-Function Q_ProcessStringFieldMemblocks(instance, command$)
-	type_id = getTypeID(instance)
-	td.Q_TypeDefinition = Q_getTypeDefinition(type_id)
+Function Q.Type.ProcessStringFieldMemblocks(instance, command$)
+	type_id = Type.getTypeID(instance)
+	td.Q_Type_Definition = Q.Type.getDefinition(type_id)
 	For i = 1 To td\count_fields
 		field_character$ = Mid(td\fields, i,1)
 		If "s" = field_character Then
 			// This is a String Field. Process it. All other fields can be ignored.
-			field_position = Q_getFieldPosition(i, td\fields) // Gives an integer telling where this Field is located in the type instance memblock
+			field_position = Q.Type.getFieldPosition(i, td\fields) // Gives an integer telling where this Field is located in the type instance memblock
 			string_memblock = PeekInt(instance, field_position)
 			
 			// Perform a command
 			Select Lower(command)
 			Case "clone"
 				// In this Case we have cloned Data from another Type instance. Each instance needs To have _unique_ String Field memblocks, otherwise they will End up sharing the String fields by reference, so a change To a String Field's value in one Type instance would lead the same change To appear in another instance too.
-				overwrite = CloneMemblock(string_memblock) // Make a New memblock with the same String content As the original one. Then overwrite the string memblock pointer so that our cloned instance uses the New memblock instead of the original one.
+				overwrite = Memblock.Clone(string_memblock) // Make a New memblock with the same String content As the original one. Then overwrite the string memblock pointer so that our cloned instance uses the New memblock instead of the original one.
 			Case "del"
 				// In this case we are discarding contents of a Type instance. String fields have special memblocks attached To them which need To be removed in order To avoid cluttering up the program memory.
 				DeleteMEMBlock string_memblock
 				overwrite = 0 // Replace the deleted memblock's pointer with a 0. This has no actual effect in practise - we could just leave the pointer intact - but For clarity's sake we should generally always remove pointers whose target is deleted.
 			Default
-				If Not HandleError("Q_ProcessStringFieldMemblocks", "Unrecognised command: %1", Lower(command)) Then Return False
+				If Not Error.Handle("Q.Type.ProcessStringFieldMemblocks", "Unrecognised command: %1", Lower(command)) Then Return False
 			EndSelect
 			
 			// Perform the memblock pointer overwrite
@@ -428,16 +428,16 @@ Function Q_ProcessStringFieldMemblocks(instance, command$)
 	Next i
 EndFunction
 
-Function Q_DeleteStringFieldMemblocks(instance)
-	Q_ProcessStringFieldMemblocks(instance, "del")
+Function Q.Type.DeleteStringFieldMemblocks(instance)
+	Q.Type.ProcessStringFieldMemblocks(instance, "del")
 EndFunction
 
-Function Q_CloneStringFieldMemblocks(instance)
-	Q_ProcessStringFieldMemblocks(instance, "clone")
+Function Q.Type.CloneStringFieldMemblocks(instance)
+	Q.Type.ProcessStringFieldMemblocks(instance, "clone")
 EndFunction
 
-Function Q_getFieldPosition(field_index, fields$)
-	position = Q_INSTANCE_FIELDS_START
+Function Q.Type.getFieldPosition(field_index, fields$)
+	position = Q.TYPE.INSTANCE_FIELDS_START
 	
 	// Iterate all _preceding_ fields To determine where the current Field _starts_. -1 is used so that we will Not accidentally add the current Field's _length_ To the position value, which would lead us To a position of a Field _after_ the current Field.
 	For i = 1 To field_index - 1
@@ -449,25 +449,25 @@ Function Q_getFieldPosition(field_index, fields$)
 		ElseIf "b" = field_character Then // b = Byte. Takes 1 Byte of memory space.
 			position + 1
 		Else
-			If Not HandleError("Q_getFieldPosition", "Illegal f"+"ield datatype character detected: %1 . (The whole f"+"ield definition is: %2).", field_character, fields) Then Return False
+			If Not Error.Handle("Q.Type.getFieldPosition", "Illegal f"+"ield datatype character detected: %1 . (The whole f"+"ield definition is: %2).", field_character, fields) Then Return False
 		EndIf
 	Next i
 	Return position
 EndFunction
 
-Function Q_getAllFieldsSize(type_id)
-	td.Q_TypeDefinition = Q_getTypeDefinition(type_id)
-	Return Q_getFieldPosition(td\count_fields + 1, td\fields) - Q_INSTANCE_FIELDS_START // +1 is used To trick Q_getFieldPosition() To give us a position of a "Field After the Last Field". That kind of Field obviously do Not exists, but this way we will get the length of all Data fields.
+Function Q.Type.getAllFieldsSize(type_id)
+	td.Q_Type_Definition = Q.Type.getDefinition(type_id)
+	Return Q.Type.getFieldPosition(td\count_fields + 1, td\fields) - Q.TYPE.INSTANCE_FIELDS_START // +1 is used To trick Q.Type.getFieldPosition() To give us a position of a "Field After the Last Field". That kind of Field obviously do Not exists, but this way we will get the length of all Data fields.
 EndFunction
 
-Function Q_getTypeDefinition(type_id)
-	For td.Q_TypeDefinition = Each Q_TypeDefinition
+Function Q.Type.getDefinition(type_id)
+	For td.Q_Type_Definition = Each Q_Type_Definition
 		If td\type_id = type_id Then Return td\id
 	Next td
-	HandleError("Q_getTypeDefinition", "Did Not find a Type definition with id %1.", type_id)
+	Error.Handle("Q.Type.getDefinition", "Did Not find a Type definition with id %1.", type_id)
 EndFunction
 
-Function Q_SanitizeTypeFields(fields$)
+Function Q.Type.SanitizeFields(fields$)
 	fields = Lower(fields)
 	
 	// Replace aliases
@@ -476,9 +476,9 @@ Function Q_SanitizeTypeFields(fields$)
 	fields = Replace(fields, "%", "i")
 	
 	// Check that the fields definition contains only recogniseable characters
-	unmatching_characters$ = UnmatchingCharacters(fields, Q_DATATYPE_LETTERS)
+	unmatching_characters$ = String.UnmatchingCharacters(fields, Q.TYPE.DATATYPE_LETTERS)
 	If unmatching_characters Then
-		If Not HandleError("Q_SanitizeTypeFields", "Fields definition '%1' contains character(s) '%2' that are n"+"ot in the recognised datatype character list: '%3'", fields, unmatching_characters, Q_DATATYPE_LETTERS) Then Return False
+		If Not Error.Handle("Q.Type.SanitizeFields", "Fields definition '%1' contains character(s) '%2' that are n"+"ot in the recognised datatype character list: '%3'", fields, unmatching_characters, Q.TYPE.DATATYPE_LETTERS) Then Return False
 	EndIf
 	
 	Return fields
